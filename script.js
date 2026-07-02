@@ -53,10 +53,6 @@ function updateActiveNav() {
 }
 
 function setupReveal() {
-  // Stagger delay per element, based on its position among reveal siblings
-  // within the same parent (the old CSS `:nth-of-type` selector only ever
-  // matched elements that shared both a parent AND a tag name, so most
-  // items never actually received a stagger).
   const groups = new Map();
   revealItems.forEach((item) => {
     const parent = item.parentElement;
@@ -92,7 +88,6 @@ function setupReveal() {
 function setupTilt() {
   if (prefersReducedMotion) return;
 
-  // Filter out hero-visual to avoid conflicts with absolutely positioned animated children
   const tiltElements = tiltItems.filter(item => !item.classList.contains("hero-visual"));
 
   tiltElements.forEach((item) => {
@@ -135,7 +130,7 @@ function setupCursor() {
 
   animateCursor();
 
-  document.querySelectorAll("a, button, .project-card, .service-card").forEach((target) => {
+  document.querySelectorAll("a, button, .project-card, .service-card, .mute-btn").forEach((target) => {
     target.addEventListener("mouseenter", () => cursor.classList.add("is-hovering"));
     target.addEventListener("mouseleave", () => cursor.classList.remove("is-hovering"));
   });
@@ -174,7 +169,6 @@ function setupEmailMenu() {
     }
   });
 
-  // Menu links/buttons close the menu once activated
   menu.querySelectorAll("a").forEach((link) => {
     link.addEventListener("click", close);
   });
@@ -199,8 +193,6 @@ function setupCopyEmail(closeEmailMenu) {
     }
   }
 
-  // Fallback for insecure contexts (e.g. opened via file://) or older
-  // browsers where navigator.clipboard is unavailable/blocked.
   function legacyCopy() {
     const textarea = document.createElement("textarea");
     textarea.value = email;
@@ -242,8 +234,6 @@ function setupCopyEmail(closeEmailMenu) {
       return;
     }
 
-    // Copy is genuinely unavailable — never fail silently. Show the email
-    // for manual selection and open the mail client as a last resort.
     showState("Tap to Select Email", false);
     if (fallbackHint) fallbackHint.hidden = false;
     setTimeout(() => {
@@ -252,31 +242,73 @@ function setupCopyEmail(closeEmailMenu) {
   });
 }
 
-function setupVideoPlay() {
-  const showcase = document.querySelector(".video-showcase");
-  const trigger = document.querySelector(".video-play-trigger");
+// ----------------------------------------------------
+// YOUTUBE API SETUP FOR CUSTOM AUTOPLAY VIDEO
+// ----------------------------------------------------
+const ytTag = document.createElement('script');
+ytTag.src = "https://www.youtube.com/iframe_api";
+const firstScriptTag = document.getElementsByTagName('script')[0];
+firstScriptTag.parentNode.insertBefore(ytTag, firstScriptTag);
 
-  if (!showcase || !trigger) return;
+let ytPlayer;
+window.onYouTubeIframeAPIReady = function() {
+  const playerContainer = document.getElementById('yt-player');
+  if (!playerContainer) return;
 
-  const videoId = showcase.dataset.videoId;
-  if (!videoId) return;
+  ytPlayer = new YT.Player('yt-player', {
+    videoId: 'zgZGYt4Er2o',
+    playerVars: {
+      autoplay: 1,       // Auto-play the video
+      mute: 1,           // Must be muted to autoplay in modern browsers
+      controls: 0,       // Hide player controls
+      disablekb: 1,      // Disable keyboard controls
+      fs: 0,             // Hide fullscreen button
+      modestbranding: 1, // Hide YouTube logo
+      rel: 0,            // Do not show related videos
+      loop: 1,           // Loop the video
+      playlist: 'zgZGYt4Er2o', // Required for looping
+      playsinline: 1     // Play inline on mobile
+    },
+    events: {
+      onReady: onPlayerReady,
+      onStateChange: (event) => {
+        // Fallback for continuous loop if needed
+        if (event.data === YT.PlayerState.ENDED) {
+          ytPlayer.playVideo();
+        }
+      }
+    }
+  });
+};
 
-  function playVideo() {
-    const iframe = document.createElement("iframe");
-    // autoplay + unmuted is allowed here because this only ever runs in
-    // direct response to a user click/tap, so browser autoplay-blocking
-    // policies don't apply.
-    iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1`;
-    iframe.setAttribute("title", "Featured animation project");
-    iframe.setAttribute("frameborder", "0");
-    iframe.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
-    iframe.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture");
-    iframe.setAttribute("allowfullscreen", "");
-    showcase.replaceChild(iframe, trigger);
-  }
-
-  trigger.addEventListener("click", playVideo);
+function onPlayerReady(event) {
+  event.target.playVideo();
+  setupMuteButton();
 }
+
+function setupMuteButton() {
+  const muteBtn = document.getElementById('muteBtn');
+  if (!muteBtn || !ytPlayer) return;
+
+  const iconMuted = muteBtn.querySelector('.icon-muted');
+  const iconUnmuted = muteBtn.querySelector('.icon-unmuted');
+
+  muteBtn.addEventListener('click', () => {
+    if (ytPlayer.isMuted()) {
+      ytPlayer.unMute();
+      iconMuted.style.display = 'none';
+      iconUnmuted.style.display = 'block';
+    } else {
+      ytPlayer.mute();
+      iconMuted.style.display = 'block';
+      iconUnmuted.style.display = 'none';
+    }
+  });
+}
+
+// ----------------------------------------------------
+// INITIALIZATION
+// ----------------------------------------------------
 
 let scrollTicking = false;
 window.addEventListener("scroll", () => {
@@ -299,4 +331,3 @@ setupTilt();
 setupCursor();
 const closeEmailMenu = setupEmailMenu();
 setupCopyEmail(closeEmailMenu);
-setupVideoPlay();
