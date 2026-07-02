@@ -53,6 +53,22 @@ function updateActiveNav() {
 }
 
 function setupReveal() {
+  // Stagger delay per element, based on its position among reveal siblings
+  // within the same parent (the old CSS `:nth-of-type` selector only ever
+  // matched elements that shared both a parent AND a tag name, so most
+  // items never actually received a stagger).
+  const groups = new Map();
+  revealItems.forEach((item) => {
+    const parent = item.parentElement;
+    if (!groups.has(parent)) groups.set(parent, []);
+    groups.get(parent).push(item);
+  });
+  groups.forEach((items) => {
+    items.forEach((item, i) => {
+      item.style.setProperty("--reveal-delay", `${Math.min(i, 6) * 75}ms`);
+    });
+  });
+
   if (prefersReducedMotion || !("IntersectionObserver" in window)) {
     revealItems.forEach((item) => item.classList.add("is-visible"));
     return;
@@ -76,7 +92,10 @@ function setupReveal() {
 function setupTilt() {
   if (prefersReducedMotion) return;
 
-  tiltItems.forEach((item) => {
+  // Filter out hero-visual to avoid conflicts with absolutely positioned animated children
+  const tiltElements = tiltItems.filter(item => !item.classList.contains("hero-visual"));
+
+  tiltElements.forEach((item) => {
     item.addEventListener("mousemove", (event) => {
       const rect = item.getBoundingClientRect();
       const x = event.clientX - rect.left;
@@ -122,27 +141,152 @@ function setupCursor() {
   });
 }
 
-function setupCopyEmail() {
+function setupEmailMenu() {
+  const trigger = document.querySelector("#emailMeBtn");
+  const menu = document.querySelector("#emailMenu");
+  if (!trigger || !menu) return null;
+
+  function open() {
+    menu.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+  }
+
+  function close() {
+    menu.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+  }
+
+  trigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    menu.hidden ? open() : close();
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!menu.hidden && !menu.contains(event.target) && event.target !== trigger) {
+      close();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !menu.hidden) {
+      close();
+      trigger.focus();
+    }
+  });
+
+  // Menu links/buttons close the menu once activated
+  menu.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", close);
+  });
+
+  return close;
+}
+
+function setupCopyEmail(closeEmailMenu) {
   if (!copyEmailButton) return;
 
-  copyEmailButton.addEventListener("click", async () => {
-    const email = "sadarulakshan669@gmail.com";
+  const email = copyEmailButton.dataset.email || "sadarulakshan669@gmail.com";
+  const fallbackHint = document.querySelector("#copyFallbackHint");
+  let resetTimer;
 
-    try {
-      await navigator.clipboard.writeText(email);
-      copyEmailButton.textContent = "Email Copied";
-      setTimeout(() => {
-        copyEmailButton.textContent = "Copy Email";
-      }, 1800);
-    } catch {
-      window.location.href = `mailto:${email}`;
+  function showState(label, revert = true) {
+    clearTimeout(resetTimer);
+    copyEmailButton.textContent = label;
+    if (revert) {
+      resetTimer = setTimeout(() => {
+        copyEmailButton.textContent = "Copy Email Address";
+      }, 2200);
     }
+  }
+
+  // Fallback for insecure contexts (e.g. opened via file://) or older
+  // browsers where navigator.clipboard is unavailable/blocked.
+  function legacyCopy() {
+    const textarea = document.createElement("textarea");
+    textarea.value = email;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    textarea.setSelectionRange(0, email.length);
+
+    let succeeded = false;
+    try {
+      succeeded = document.execCommand("copy");
+    } catch {
+      succeeded = false;
+    }
+    document.body.removeChild(textarea);
+    return succeeded;
+  }
+
+  copyEmailButton.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    if (fallbackHint) fallbackHint.hidden = true;
+
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(email);
+        showState("Email Copied");
+        setTimeout(() => closeEmailMenu && closeEmailMenu(), 900);
+        return;
+      } catch {
+        // fall through to legacy copy
+      }
+    }
+
+    if (legacyCopy()) {
+      showState("Email Copied");
+      setTimeout(() => closeEmailMenu && closeEmailMenu(), 900);
+      return;
+    }
+
+    // Copy is genuinely unavailable — never fail silently. Show the email
+    // for manual selection and open the mail client as a last resort.
+    showState("Tap to Select Email", false);
+    if (fallbackHint) fallbackHint.hidden = false;
+    setTimeout(() => {
+      window.location.href = `mailto:${email}`;
+    }, 400);
   });
 }
 
+function setupVideoPlay() {
+  const showcase = document.querySelector(".video-showcase");
+  const trigger = document.querySelector(".video-play-trigger");
+
+  if (!showcase || !trigger) return;
+
+  const videoId = showcase.dataset.videoId;
+  if (!videoId) return;
+
+  function playVideo() {
+    const iframe = document.createElement("iframe");
+    // autoplay + unmuted is allowed here because this only ever runs in
+    // direct response to a user click/tap, so browser autoplay-blocking
+    // policies don't apply.
+    iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1`;
+    iframe.setAttribute("title", "Featured animation project");
+    iframe.setAttribute("frameborder", "0");
+    iframe.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+    iframe.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture");
+    iframe.setAttribute("allowfullscreen", "");
+    showcase.replaceChild(iframe, trigger);
+  }
+
+  trigger.addEventListener("click", playVideo);
+}
+
+let scrollTicking = false;
 window.addEventListener("scroll", () => {
-  setProgress();
-  updateActiveNav();
+  if (scrollTicking) return;
+  scrollTicking = true;
+  requestAnimationFrame(() => {
+    setProgress();
+    updateActiveNav();
+    scrollTicking = false;
+  });
 }, { passive: true });
 
 window.addEventListener("load", () => {
@@ -153,4 +297,6 @@ window.addEventListener("load", () => {
 setupReveal();
 setupTilt();
 setupCursor();
-setupCopyEmail();
+const closeEmailMenu = setupEmailMenu();
+setupCopyEmail(closeEmailMenu);
+setupVideoPlay();
