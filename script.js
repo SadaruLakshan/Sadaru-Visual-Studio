@@ -108,7 +108,11 @@ function setupTilt() {
 }
 
 function setupCursor() {
-  if (prefersReducedMotion || !cursor) return;
+  // STRICT MOBILE KILL SWITCH: Block cursor animation completely on screens <= 980px
+  if (prefersReducedMotion || !cursor || window.innerWidth <= 980) {
+    if (cursor) cursor.style.display = 'none';
+    return;
+  }
 
   let cursorX = window.innerWidth / 2;
   let cursorY = window.innerHeight / 2;
@@ -243,7 +247,7 @@ function setupCopyEmail(closeEmailMenu) {
 }
 
 // ----------------------------------------------------
-// YOUTUBE API SETUP FOR CUSTOM AUTOPLAY VIDEO
+// YOUTUBE API SETUP - NOW CONNECTS DIRECTLY TO HTML IFRAME
 // ----------------------------------------------------
 const ytTag = document.createElement('script');
 ytTag.src = "https://www.youtube.com/iframe_api";
@@ -252,31 +256,9 @@ firstScriptTag.parentNode.insertBefore(ytTag, firstScriptTag);
 
 let ytPlayer;
 window.onYouTubeIframeAPIReady = function() {
-  const playerContainer = document.getElementById('yt-player');
-  if (!playerContainer) return;
-
   ytPlayer = new YT.Player('yt-player', {
-    videoId: 'zgZGYt4Er2o',
-    playerVars: {
-      autoplay: 1,       // Auto-play the video
-      mute: 1,           // Must be muted to autoplay in modern browsers
-      controls: 0,       // Hide player controls
-      disablekb: 1,      // Disable keyboard controls
-      fs: 0,             // Hide fullscreen button
-      modestbranding: 1, // Hide YouTube logo
-      rel: 0,            // Do not show related videos
-      loop: 1,           // Loop the video
-      playlist: 'zgZGYt4Er2o', // Required for looping
-      playsinline: 1     // Play inline on mobile
-    },
     events: {
-      onReady: onPlayerReady,
-      onStateChange: (event) => {
-        // Fallback for continuous loop if needed
-        if (event.data === YT.PlayerState.ENDED) {
-          ytPlayer.playVideo();
-        }
-      }
+      'onReady': onPlayerReady
     }
   });
 };
