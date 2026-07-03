@@ -108,7 +108,6 @@ function setupTilt() {
 }
 
 function setupCursor() {
-  // STRICT MOBILE KILL SWITCH: Block cursor animation completely on screens <= 980px
   if (prefersReducedMotion || !cursor || window.innerWidth <= 980) {
     if (cursor) cursor.style.display = 'none';
     return;
@@ -134,7 +133,7 @@ function setupCursor() {
 
   animateCursor();
 
-  document.querySelectorAll("a, button, .project-card, .service-card, .mute-btn").forEach((target) => {
+  document.querySelectorAll("a, button, .project-card, .service-card, .control-btn").forEach((target) => {
     target.addEventListener("mouseenter", () => cursor.classList.add("is-hovering"));
     target.addEventListener("mouseleave", () => cursor.classList.remove("is-hovering"));
   });
@@ -247,7 +246,7 @@ function setupCopyEmail(closeEmailMenu) {
 }
 
 // ----------------------------------------------------
-// YOUTUBE API SETUP - NOW CONNECTS DIRECTLY TO HTML IFRAME
+// YOUTUBE API SETUP - WITH PLAY/PAUSE & MUTE TOGGLE
 // ----------------------------------------------------
 const ytTag = document.createElement('script');
 ytTag.src = "https://www.youtube.com/iframe_api";
@@ -265,27 +264,50 @@ window.onYouTubeIframeAPIReady = function() {
 
 function onPlayerReady(event) {
   event.target.playVideo();
-  setupMuteButton();
+  setupVideoControls();
 }
 
-function setupMuteButton() {
+function setupVideoControls() {
   const muteBtn = document.getElementById('muteBtn');
-  if (!muteBtn || !ytPlayer) return;
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  if (!ytPlayer) return;
 
-  const iconMuted = muteBtn.querySelector('.icon-muted');
-  const iconUnmuted = muteBtn.querySelector('.icon-unmuted');
+  if (muteBtn) {
+    const iconMuted = muteBtn.querySelector('.icon-muted');
+    const iconUnmuted = muteBtn.querySelector('.icon-unmuted');
 
-  muteBtn.addEventListener('click', () => {
-    if (ytPlayer.isMuted()) {
-      ytPlayer.unMute();
-      iconMuted.style.display = 'none';
-      iconUnmuted.style.display = 'block';
-    } else {
-      ytPlayer.mute();
-      iconMuted.style.display = 'block';
-      iconUnmuted.style.display = 'none';
-    }
-  });
+    muteBtn.addEventListener('click', () => {
+      if (ytPlayer.isMuted()) {
+        ytPlayer.unMute();
+        iconMuted.style.display = 'none';
+        iconUnmuted.style.display = 'block';
+      } else {
+        ytPlayer.mute();
+        iconMuted.style.display = 'block';
+        iconUnmuted.style.display = 'none';
+      }
+    });
+  }
+
+  if (playPauseBtn) {
+    const iconPause = playPauseBtn.querySelector('.icon-pause');
+    const iconPlay = playPauseBtn.querySelector('.icon-play');
+    let isPlaying = true; // Auto-play is on by default
+
+    playPauseBtn.addEventListener('click', () => {
+      if (isPlaying) {
+        ytPlayer.pauseVideo();
+        iconPause.style.display = 'none';
+        iconPlay.style.display = 'block';
+        isPlaying = false;
+      } else {
+        ytPlayer.playVideo();
+        iconPause.style.display = 'block';
+        iconPlay.style.display = 'none';
+        isPlaying = true;
+      }
+    });
+  }
 }
 
 // ----------------------------------------------------
