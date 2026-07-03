@@ -235,9 +235,7 @@ input {
   opacity: 0.8;
 }
 
-h1,
-h2,
-h3 {
+h1, h2, h3 {
   letter-spacing: -0.06em;
   line-height: 0.96;
 }
@@ -340,15 +338,13 @@ h1 {
   isolation: isolate;
 }
 
-/* Prevent tilt from affecting absolutely positioned children */
 .hero-visual .video-showcase {
   transform: rotate(3deg);
-  transition: none;
+  transition: transform 220ms var(--ease);
 }
 
 .hero-visual:hover .video-showcase {
   transform: rotate(3deg) translateY(-4px);
-  transition: transform 220ms var(--ease);
 }
 
 .video-showcase {
@@ -358,34 +354,41 @@ h1 {
   aspect-ratio: 0.78;
   border: 1px solid rgba(244, 239, 231, 0.16);
   border-radius: 38px;
-  overflow: hidden;
+  overflow: hidden; /* This masks the corners of the child iframe perfectly */
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
   box-shadow: var(--shadow);
   transform: rotate(3deg);
   background: #050505; 
   animation: floatFrame 7s var(--ease) infinite alternate;
 }
 
-/* VIDEO STRETCHING TRICK */
+/* FIXED VIDEO SCALING: Zoomed just 2% so it fills the box and perfectly follows the rounded corners */
 .video-showcase iframe {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 250%;
-  height: 250%;
+  width: 102%;
+  height: 102%;
   transform: translate(-50%, -50%);
   pointer-events: none; 
   z-index: 0;
   border: 0;
+  border-radius: inherit;
 }
 
-/* Custom Mute Toggle Button */
-.mute-btn {
+/* Custom Play/Pause & Mute/Unmute Controls wrapper */
+.video-controls {
   position: absolute;
   bottom: 22px;
   right: 22px;
   z-index: 10;
-  width: 48px;
-  height: 48px;
+  display: flex;
+  gap: 10px;
+}
+
+.control-btn {
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid rgba(244, 239, 231, 0.2);
   background: rgba(8, 8, 8, 0.65);
@@ -397,7 +400,7 @@ h1 {
   transition: transform 220ms var(--ease), background 220ms var(--ease);
 }
 
-.mute-btn:hover {
+.control-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   transform: scale(1.08);
 }
@@ -811,7 +814,6 @@ h2 {
   color: var(--text);
 }
 
-/* Staggered reveal animations */
 .reveal {
   opacity: 0;
   transform: translateY(28px) scale(0.98);
@@ -976,7 +978,7 @@ h2 {
     linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 40%),
     rgba(255, 255, 255, 0.035);
   box-shadow: var(--shadow);
-  overflow: hidden;
+  /* overflow: hidden ඉවත් කළා - Email Menu කැපෙන ප්‍රශ්නය විසඳීමට */
 }
 
 .contact-panel h2 {
@@ -1019,7 +1021,7 @@ h2 {
   position: absolute;
   top: calc(100% + 10px);
   left: 0;
-  z-index: 20;
+  z-index: 100;
   flex-direction: column;
   min-width: 240px;
   padding: 8px;
@@ -1139,13 +1141,10 @@ h2 {
   100% { transform: translateY(-18px) rotate(-1deg); }
 }
 
-/* STRICT MOBILE FIXES */
 @media (max-width: 980px) {
-  /* Hide the custom cursor completely on mobile/tablets */
   .cursor {
     display: none !important;
   }
-  
   .hero-grid,
   .about-card,
   .section-head,
