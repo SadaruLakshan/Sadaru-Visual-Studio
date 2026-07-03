@@ -246,6 +246,31 @@ function setupCopyEmail(closeEmailMenu) {
 }
 
 // ----------------------------------------------------
+// MOBILE CUSTOM LINK BEHAVIOR FOR "WORK" BUTTONS
+// ----------------------------------------------------
+function setupMobileWorkLinks() {
+  const workLinks = document.querySelectorAll('a[href="#work"]');
+  const heroVisual = document.querySelector('.hero-visual');
+
+  workLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      // Check if it's mobile view (width <= 980px)
+      if (window.innerWidth <= 980 && heroVisual) {
+        e.preventDefault(); // Stop normal scroll to #work
+        
+        // Close menu if it was clicked from the nav
+        if (nav.classList.contains("is-open")) {
+          closeMenu();
+        }
+        
+        // Scroll smoothly to the Animation Project
+        heroVisual.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  });
+}
+
+// ----------------------------------------------------
 // YOUTUBE API SETUP - WITH PLAY/PAUSE & MUTE TOGGLE
 // ----------------------------------------------------
 const ytTag = document.createElement('script');
@@ -292,7 +317,7 @@ function setupVideoControls() {
   if (playPauseBtn) {
     const iconPause = playPauseBtn.querySelector('.icon-pause');
     const iconPlay = playPauseBtn.querySelector('.icon-play');
-    let isPlaying = true; // Auto-play is on by default
+    let isPlaying = true; 
 
     playPauseBtn.addEventListener('click', () => {
       if (isPlaying) {
@@ -333,5 +358,6 @@ window.addEventListener("load", () => {
 setupReveal();
 setupTilt();
 setupCursor();
+setupMobileWorkLinks(); // Added new function call here
 const closeEmailMenu = setupEmailMenu();
 setupCopyEmail(closeEmailMenu);
