@@ -33,8 +33,11 @@ menuToggle.addEventListener("click", () => {
   nav.classList.contains("is-open") ? closeMenu() : openMenu();
 });
 
+// Remove normal closeMenu for Work links to handle them customly
 navLinks.forEach((link) => {
-  link.addEventListener("click", closeMenu);
+  if(!link.classList.contains('work-link')){
+     link.addEventListener("click", closeMenu);
+  }
 });
 
 function updateActiveNav() {
@@ -87,9 +90,7 @@ function setupReveal() {
 
 function setupTilt() {
   if (prefersReducedMotion) return;
-
   const tiltElements = tiltItems.filter(item => !item.classList.contains("hero-visual"));
-
   tiltElements.forEach((item) => {
     item.addEventListener("mousemove", (event) => {
       const rect = item.getBoundingClientRect();
@@ -97,10 +98,8 @@ function setupTilt() {
       const y = event.clientY - rect.top;
       const rotateY = ((x / rect.width) - 0.5) * 8;
       const rotateX = ((0.5 - y / rect.height)) * 8;
-
       item.style.transform = `perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-4px)`;
     });
-
     item.addEventListener("mouseleave", () => {
       item.style.transform = "";
     });
@@ -112,7 +111,6 @@ function setupCursor() {
     if (cursor) cursor.style.display = 'none';
     return;
   }
-
   let cursorX = window.innerWidth / 2;
   let cursorY = window.innerHeight / 2;
   let mouseX = cursorX;
@@ -130,7 +128,6 @@ function setupCursor() {
     cursor.style.top = `${cursorY}px`;
     requestAnimationFrame(animateCursor);
   }
-
   animateCursor();
 
   document.querySelectorAll("a, button, .project-card, .service-card, .control-btn").forEach((target) => {
@@ -139,49 +136,55 @@ function setupCursor() {
   });
 }
 
+// ----------------------------------------------------
+// MOBILE CUSTOM LINK BEHAVIOR FOR "WORK" BUTTONS
+// ----------------------------------------------------
+function setupMobileWorkLinks() {
+  const workLinks = document.querySelectorAll('.work-link');
+  const latestVideo = document.getElementById('latest-video');
+  const workSection = document.getElementById('work');
+
+  workLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault(); 
+      
+      if (nav.classList.contains("is-open")) {
+        closeMenu();
+      }
+      
+      // If mobile, go to video. If desktop, go to work section.
+      if (window.innerWidth <= 980 && latestVideo) {
+        latestVideo.scrollIntoView({ behavior: 'smooth' });
+      } else if (workSection) {
+        workSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  });
+}
+
 function setupEmailMenu() {
   const trigger = document.querySelector("#emailMeBtn");
   const menu = document.querySelector("#emailMenu");
   if (!trigger || !menu) return null;
-
-  function open() {
-    menu.hidden = false;
-    trigger.setAttribute("aria-expanded", "true");
-  }
-
-  function close() {
-    menu.hidden = true;
-    trigger.setAttribute("aria-expanded", "false");
-  }
+  function open() { menu.hidden = false; trigger.setAttribute("aria-expanded", "true"); }
+  function close() { menu.hidden = true; trigger.setAttribute("aria-expanded", "false"); }
 
   trigger.addEventListener("click", (event) => {
     event.stopPropagation();
     menu.hidden ? open() : close();
   });
-
   document.addEventListener("click", (event) => {
-    if (!menu.hidden && !menu.contains(event.target) && event.target !== trigger) {
-      close();
-    }
+    if (!menu.hidden && !menu.contains(event.target) && event.target !== trigger) close();
   });
-
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !menu.hidden) {
-      close();
-      trigger.focus();
-    }
+    if (event.key === "Escape" && !menu.hidden) { close(); trigger.focus(); }
   });
-
-  menu.querySelectorAll("a").forEach((link) => {
-    link.addEventListener("click", close);
-  });
-
+  menu.querySelectorAll("a").forEach((link) => { link.addEventListener("click", close); });
   return close;
 }
 
 function setupCopyEmail(closeEmailMenu) {
   if (!copyEmailButton) return;
-
   const email = copyEmailButton.dataset.email || "sadarulakshan669@gmail.com";
   const fallbackHint = document.querySelector("#copyFallbackHint");
   let resetTimer;
@@ -190,88 +193,40 @@ function setupCopyEmail(closeEmailMenu) {
     clearTimeout(resetTimer);
     copyEmailButton.textContent = label;
     if (revert) {
-      resetTimer = setTimeout(() => {
-        copyEmailButton.textContent = "Copy Email Address";
-      }, 2200);
+      resetTimer = setTimeout(() => { copyEmailButton.textContent = "Copy Email Address"; }, 2200);
     }
   }
 
   function legacyCopy() {
     const textarea = document.createElement("textarea");
-    textarea.value = email;
-    textarea.setAttribute("readonly", "");
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-    textarea.select();
-    textarea.setSelectionRange(0, email.length);
-
+    textarea.value = email; textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed"; textarea.style.opacity = "0";
+    document.body.appendChild(textarea); textarea.select(); textarea.setSelectionRange(0, email.length);
     let succeeded = false;
-    try {
-      succeeded = document.execCommand("copy");
-    } catch {
-      succeeded = false;
-    }
-    document.body.removeChild(textarea);
-    return succeeded;
+    try { succeeded = document.execCommand("copy"); } catch { succeeded = false; }
+    document.body.removeChild(textarea); return succeeded;
   }
 
   copyEmailButton.addEventListener("click", async (event) => {
     event.stopPropagation();
     if (fallbackHint) fallbackHint.hidden = true;
-
     if (navigator.clipboard && window.isSecureContext) {
       try {
-        await navigator.clipboard.writeText(email);
-        showState("Email Copied");
-        setTimeout(() => closeEmailMenu && closeEmailMenu(), 900);
-        return;
-      } catch {
-        // fall through to legacy copy
-      }
+        await navigator.clipboard.writeText(email); showState("Email Copied");
+        setTimeout(() => closeEmailMenu && closeEmailMenu(), 900); return;
+      } catch {}
     }
-
     if (legacyCopy()) {
-      showState("Email Copied");
-      setTimeout(() => closeEmailMenu && closeEmailMenu(), 900);
-      return;
+      showState("Email Copied"); setTimeout(() => closeEmailMenu && closeEmailMenu(), 900); return;
     }
-
     showState("Tap to Select Email", false);
     if (fallbackHint) fallbackHint.hidden = false;
-    setTimeout(() => {
-      window.location.href = `mailto:${email}`;
-    }, 400);
+    setTimeout(() => { window.location.href = `mailto:${email}`; }, 400);
   });
 }
 
 // ----------------------------------------------------
-// MOBILE CUSTOM LINK BEHAVIOR FOR "WORK" BUTTONS
-// ----------------------------------------------------
-function setupMobileWorkLinks() {
-  const workLinks = document.querySelectorAll('a[href="#work"]');
-  const heroVisual = document.querySelector('.hero-visual');
-
-  workLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-      // Check if it's mobile view (width <= 980px)
-      if (window.innerWidth <= 980 && heroVisual) {
-        e.preventDefault(); // Stop normal scroll to #work
-        
-        // Close menu if it was clicked from the nav
-        if (nav.classList.contains("is-open")) {
-          closeMenu();
-        }
-        
-        // Scroll smoothly to the Animation Project
-        heroVisual.scrollIntoView({ behavior: 'smooth' });
-      }
-    });
-  });
-}
-
-// ----------------------------------------------------
-// YOUTUBE API SETUP - WITH PLAY/PAUSE & MUTE TOGGLE
+// YOUTUBE API SETUP 
 // ----------------------------------------------------
 const ytTag = document.createElement('script');
 ytTag.src = "https://www.youtube.com/iframe_api";
@@ -281,9 +236,7 @@ firstScriptTag.parentNode.insertBefore(ytTag, firstScriptTag);
 let ytPlayer;
 window.onYouTubeIframeAPIReady = function() {
   ytPlayer = new YT.Player('yt-player', {
-    events: {
-      'onReady': onPlayerReady
-    }
+    events: { 'onReady': onPlayerReady }
   });
 };
 
@@ -300,16 +253,13 @@ function setupVideoControls() {
   if (muteBtn) {
     const iconMuted = muteBtn.querySelector('.icon-muted');
     const iconUnmuted = muteBtn.querySelector('.icon-unmuted');
-
     muteBtn.addEventListener('click', () => {
       if (ytPlayer.isMuted()) {
         ytPlayer.unMute();
-        iconMuted.style.display = 'none';
-        iconUnmuted.style.display = 'block';
+        iconMuted.style.display = 'none'; iconUnmuted.style.display = 'block';
       } else {
         ytPlayer.mute();
-        iconMuted.style.display = 'block';
-        iconUnmuted.style.display = 'none';
+        iconMuted.style.display = 'block'; iconUnmuted.style.display = 'none';
       }
     });
   }
@@ -318,46 +268,36 @@ function setupVideoControls() {
     const iconPause = playPauseBtn.querySelector('.icon-pause');
     const iconPlay = playPauseBtn.querySelector('.icon-play');
     let isPlaying = true; 
-
     playPauseBtn.addEventListener('click', () => {
       if (isPlaying) {
         ytPlayer.pauseVideo();
-        iconPause.style.display = 'none';
-        iconPlay.style.display = 'block';
+        iconPause.style.display = 'none'; iconPlay.style.display = 'block';
         isPlaying = false;
       } else {
         ytPlayer.playVideo();
-        iconPause.style.display = 'block';
-        iconPlay.style.display = 'none';
+        iconPause.style.display = 'block'; iconPlay.style.display = 'none';
         isPlaying = true;
       }
     });
   }
 }
 
-// ----------------------------------------------------
-// INITIALIZATION
-// ----------------------------------------------------
-
 let scrollTicking = false;
 window.addEventListener("scroll", () => {
   if (scrollTicking) return;
   scrollTicking = true;
   requestAnimationFrame(() => {
-    setProgress();
-    updateActiveNav();
-    scrollTicking = false;
+    setProgress(); updateActiveNav(); scrollTicking = false;
   });
 }, { passive: true });
 
 window.addEventListener("load", () => {
-  setProgress();
-  updateActiveNav();
+  setProgress(); updateActiveNav();
 });
 
 setupReveal();
 setupTilt();
 setupCursor();
-setupMobileWorkLinks(); // Added new function call here
+setupMobileWorkLinks();
 const closeEmailMenu = setupEmailMenu();
 setupCopyEmail(closeEmailMenu);
