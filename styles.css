@@ -361,22 +361,19 @@ h1 {
   overflow: hidden;
   box-shadow: var(--shadow);
   transform: rotate(3deg);
-  background: #050505; /* Black background while loading */
+  background: #050505; 
   animation: floatFrame 7s var(--ease) infinite alternate;
 }
 
-/* 
-  THIS TRICK SCALES THE VIDEO AND HIDES THE YOUTUBE BRANDING
-  pointer-events: none stops users from clicking on the YouTube UI
-*/
+/* VIDEO STRETCHING TRICK */
 .video-showcase iframe {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 180%;
-  height: 180%;
+  width: 250%;
+  height: 250%;
   transform: translate(-50%, -50%);
-  pointer-events: none;
+  pointer-events: none; 
   z-index: 0;
   border: 0;
 }
@@ -1142,7 +1139,13 @@ h2 {
   100% { transform: translateY(-18px) rotate(-1deg); }
 }
 
+/* STRICT MOBILE FIXES */
 @media (max-width: 980px) {
+  /* Hide the custom cursor completely on mobile/tablets */
+  .cursor {
+    display: none !important;
+  }
+  
   .hero-grid,
   .about-card,
   .section-head,
@@ -1229,7 +1232,6 @@ h2 {
     border-bottom: 0;
   }
   
-  /* FIXED EMAIL MENU FOR MOBILE */
   .email-menu {
     left: 0; 
     transform: none; 
@@ -1255,13 +1257,6 @@ h2 {
   }
 }
 
-/* HIDE CURSOR ON MOBILE/TABLET (Touch Devices) */
-@media (hover: none) and (pointer: coarse) {
-  .cursor {
-    display: none !important;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -1274,6 +1269,6 @@ h2 {
     transform: none;
   }
   .cursor {
-    display: none;
+    display: none !important;
   }
 }
