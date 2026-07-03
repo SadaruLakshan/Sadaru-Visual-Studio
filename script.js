@@ -152,9 +152,9 @@ function setupMobileWorkLinks() {
         closeMenu();
       }
       
-      // If mobile, go to video. If desktop, go to work section.
+      // If mobile, go to video and center it nicely. If desktop, go to work section.
       if (window.innerWidth <= 980 && latestVideo) {
-        latestVideo.scrollIntoView({ behavior: 'smooth' });
+        latestVideo.scrollIntoView({ behavior: 'smooth', block: 'center' }); // Added block: 'center'
       } else if (workSection) {
         workSection.scrollIntoView({ behavior: 'smooth' });
       }
